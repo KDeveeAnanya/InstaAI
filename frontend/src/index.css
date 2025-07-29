@@ -1,20 +1,11 @@
-/* Tailwind Base */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  @apply bg-black text-lightPurple font-sans;
+  @apply bg-black text-white transition-colors duration-300;
 }
 
-@keyframes gradientAnimation {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+.light-mode {
+  @apply bg-gray-100 text-black;
 }

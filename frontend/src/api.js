@@ -1,31 +1,43 @@
-const BASE_URL = "http://localhost:5000/api"; // Flask backend
+const API_BASE_URL = "http://localhost:5000/api"; // Change to your backend URL if deployed
 
-export async function generatePosts(payload) {
-  const response = await fetch(`${BASE_URL}/generate`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-  return await response.json();
+// Generate Instagram content
+export async function generatePosts(topic, postType, numPosts, numSlides, numSeconds) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic, postType, numPosts, numSlides, numSeconds }),
+    });
+
+    if (!response.ok) throw new Error("Failed to generate posts");
+    return await response.json();
+  } catch (error) {
+    console.error("❌ Error generating posts:", error);
+    return [];
+  }
 }
 
-export async function exportToExcel(posts) {
-  const response = await fetch(`${BASE_URL}/export`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(posts),
-  });
+// Export content as Excel
+export async function exportPosts(posts) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(posts),
+    });
 
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", "generated_posts.xlsx");
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+    if (!response.ok) throw new Error("Failed to export posts");
+
+    // Download the Excel file
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "generated_posts.xlsx");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (error) {
+    console.error("❌ Error exporting posts:", error);
+  }
 }

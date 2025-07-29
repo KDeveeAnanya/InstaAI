@@ -5,6 +5,6 @@
         "@/*": ["./*"]
       }
     },
-    "include": ["src"]
+    "include": ["src", "react-app-env.d.ts"]
   }
   

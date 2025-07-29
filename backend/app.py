@@ -1,138 +1,138 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-import io
 import pandas as pd
 import os
-import requests
+import io
 import re
-import traceback
 from dotenv import load_dotenv
+from groq import Groq
+import random
+
+# ------------------ SETUP ------------------ #
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Load Hugging Face API Token from environment variable
-HF_TOKEN = os.getenv("HF_TOKEN", "your_huggingface_token_here")
-HF_MODEL = "tiiuae/falcon-7b-instruct"
-HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+# Initialize Groq Client
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "your_groq_api_key_here")
+client = Groq(api_key=GROQ_API_KEY)
 
-headers = {
-    "Authorization": f"Bearer {HF_TOKEN}"
-}
 
-def call_huggingface(prompt, timeout=60):
+# ------------------ HELPERS ------------------ #
+def call_groq(prompt: str, temperature: float = 0.7, max_tokens: int = 400) -> str:
+    """Send prompt to Groq and get generated text."""
     try:
-        response = requests.post(
-            HF_API_URL,
-            headers=headers,
-            json={"inputs": prompt},
-            timeout=timeout
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[
+                {"role": "system",
+                 "content": "You are an expert Instagram content creator. Generate catchy, structured content."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
-        response.raise_for_status()
-        return response.json()[0]['generated_text']
+        return response.choices[0].message.content
     except Exception as e:
-        print("❌ HuggingFace API Error:", e)
-        return "**Caption:** Something went wrong.\n**Hashtags:** #error"
+        print(f"❌ Groq API Error: {e}")
+        return "Caption: Something went wrong.\nHashtags: #SocialMedia"
 
-def generate_hashtags(topic):
+
+def generate_hashtags(topic: str) -> str:
+    """Generate SEO-friendly hashtags."""
     words = topic.lower().split()
-    fallback = [f"#{word}" for word in words] + ["#InstaGood", "#ExplorePage", "#ContentCreator"]
+    fallback = [f"#{word}" for word in words] + [
+        "#TrendingNow", "#ViralContent", "#MarketingTips",
+        "#SocialMediaGrowth", "#ContentStrategy"
+    ]
     return " ".join(fallback[:15])
 
-def generate_single_post(topic, post_type, num_slides, num_seconds):
-    try:
-        if post_type == "Carousel":
-            prompt = f"""
-Create an Instagram Carousel Post about "{topic}" with {num_slides} slides.
-Each slide:
-- Headline: 6-8 words
-- Text: 10-20 words
 
-Format:
-**Slide 1:**
-Headline: ...
-Text: ...
+def parse_groq_output(content: str, topic: str) -> dict:
+    """Extract headline, hashtags, and caption from Groq response."""
+    caption_match = re.search(r"\*\*Caption:\*\*\s*(.*?)(?:\n|$)", content, re.DOTALL)
+    hashtags_match = re.search(r"\*\*Hashtags:\*\*\s*(.*?)(?:\n|$)", content, re.DOTALL)
 
-**Caption:** ...
-**Hashtags:** ...
-"""
-        elif post_type == "Reel":
-            prompt = f"""
-Create an Instagram Reel script about "{topic}" lasting {num_seconds} seconds.
-Use timestamps every 5 seconds.
+    caption_text = caption_match.group(1).strip() if caption_match else "Here's a catchy caption!"
+    hashtags_text = hashtags_match.group(1).strip() if hashtags_match else generate_hashtags(topic)
 
-Format:
-0s–5s: Hook
-5s–10s: Main Point 1
-10s–15s: Main Point 2
+    headline_copy = re.sub(r"\*\*Caption:\*\*.*", "", content, flags=re.DOTALL)
+    headline_copy = re.sub(r"\*\*Hashtags:\*\*.*", "", headline_copy, flags=re.DOTALL).strip()
 
-**Caption:** ...
-**Hashtags:** ...
-"""
-        else:  # Post
-            prompt = f"""
-Create a SINGLE Instagram Post about "{topic}".
-Include:
-- Headline: 6-8 words
-- Text: Short, catchy (10-20 words)
+    return {
+        "headlineCopy": headline_copy,
+        "hashtags": hashtags_text,
+        "caption": caption_text
+    }
 
-**Caption:** ...
-**Hashtags:** ...
-"""
 
-        content = call_huggingface(prompt)
+def generate_single_post(topic: str, post_type: str, num_slides: int = 1, num_seconds: int = 15) -> dict:
+    """Generate content for a single Instagram post using Groq."""
+    if post_type == "Carousel":
+        prompt = (
+            f"Create an Instagram Carousel Post about '{topic}' with {num_slides} slides.\n"
+            "For each slide, write:\nSlide X:\nText: (catchy, short)\n\n"
+            "Finally add:\n**Caption:** (engaging caption)\n**Hashtags:** (SEO-optimized hashtags)"
+        )
+    elif post_type == "Reel":
+        prompt = (
+            f"Create an Instagram Reel script about '{topic}' lasting {num_seconds} seconds.\n"
+            "Format like:\n0s–5s: Hook\n5s–10s: Main Point 1\n10s–15s: Main Point 2\n\n"
+            "Finally add:\n**Caption:** ...\n**Hashtags:** ..."
+        )
+    else:
+        prompt = (
+            f"Create a SINGLE Instagram Post about '{topic}'.\n"
+            "Include:\nHeadline: (6-8 words)\nBody: (catchy 2-3 lines)\n\n"
+            "Finally add:\n**Caption:** ...\n**Hashtags:** ..."
+        )
 
-        caption = re.search(r"\*\*Caption:\*\*\s*(.*?)(?:\*\*|$)", content, re.DOTALL)
-        hashtags = re.search(r"\*\*Hashtags:\*\*\s*(.*?)(?:\*\*|$)", content, re.DOTALL)
+    content = call_groq(prompt)
+    parsed_data = parse_groq_output(content, topic)
 
-        caption_text = caption.group(1).strip() if caption else "Here's a great caption! 🚀"
-        hashtags_text = hashtags.group(1).strip() if hashtags else generate_hashtags(topic)
+    return {
+        "postType": post_type,
+        "headlineCopy": parsed_data["headlineCopy"],
+        "hashtags": parsed_data["hashtags"],
+        "caption": parsed_data["caption"]
+    }
 
-        headline_copy = re.sub(r"\*\*Caption:\*\*.*", "", content, flags=re.DOTALL)
-        headline_copy = re.sub(r"\*\*Hashtags:\*\*.*", "", headline_copy, flags=re.DOTALL).strip()
 
-        return {
-            "postType": post_type,
-            "headlineCopy": headline_copy,
-            "hashtags": hashtags_text,
-            "caption": caption_text
-        }
-
-    except Exception as e:
-        print(f"❌ Generation error: {e}")
-        traceback.print_exc()
-        return {
-            "postType": post_type,
-            "headlineCopy": "Failed to generate.",
-            "hashtags": "#error",
-            "caption": "Something went wrong."
-        }
-
+# ------------------ ROUTES ------------------ #
 @app.route("/api/generate", methods=["POST"])
 def generate_batch():
     data = request.json
     topic = data.get("topic", "")
-    post_type = data.get("postType", "Post")
-    requested_posts = int(data.get("numPosts", 1))
-    num_posts = min(requested_posts, 5)
+    selected_type = data.get("postType", "Post")
+    num_posts = min(int(data.get("numPosts", 1)), 30)
     num_slides = int(data.get("numSlides", 1))
     num_seconds = int(data.get("numSeconds", 15))
 
-    print(f"[INFO] Generating {num_posts} '{post_type}' posts on '{topic}'")
+    print(f"[INFO] Generating {num_posts} '{selected_type}' posts on '{topic}'")
 
-    posts = [generate_single_post(topic, post_type, num_slides, num_seconds) for _ in range(num_posts)]
+    def get_post_type():
+        if selected_type == "Mixed":
+            return random.choice(["Post", "Carousel", "Reel"])
+        return selected_type
+
+    posts = [
+        generate_single_post(topic, get_post_type(), num_slides, num_seconds)
+        for _ in range(num_posts)
+    ]
     return jsonify(posts)
+
 
 @app.route("/api/export", methods=["POST"])
 def export_to_excel():
+    """Export generated posts to an Excel file."""
     posts = request.json
     output = io.BytesIO()
 
     df = pd.DataFrame([
         {
             "Post Number": idx + 1,
-            "Content Type": post.get("postType", "post"),
+            "Post Type": post.get("postType", "Post"),
             "Headline & Copy": post.get("headlineCopy", ""),
             "Hashtags": post.get("hashtags", ""),
             "Caption": post.get("caption", "")
@@ -146,5 +146,7 @@ def export_to_excel():
     output.seek(0)
     return send_file(output, download_name="generated_posts.xlsx", as_attachment=True)
 
+
+# ------------------ MAIN ------------------ #
 if __name__ == "__main__":
     app.run(debug=True)
