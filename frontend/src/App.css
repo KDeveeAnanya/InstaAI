@@ -1,0 +1,80 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #0e0e10; /* Uniform dark background */
+  color: #ffffff;
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 700px;
+}
+
+h1 {
+  color: #a855f7; /* Subtle purple */
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+}
+
+.inputs-container {
+  background-color: #1a1a1d;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #d1d5db; /* Cool grey text */
+}
+
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  background-color: #2c2c2e;
+  border: none;
+  border-radius: 0.75rem;
+  color: #fff;
+  font-size: 1rem;
+}
+
+input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #a855f7;
+}
+
+button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #a855f7;
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #9333ea;
+}
+
+input[type="radio"] {
+  margin-right: 0.5rem;
+}
+
+.post {
+  background-color: #1f1f22;
+  padding: 1rem;
+  border-radius: 1rem;
+  margin-top: 1rem;
+  color: #e5e7eb;
+}

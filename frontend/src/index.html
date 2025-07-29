@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Creative Content Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Creative Content Generator</h1>
+
+    <label for="numCreatives">Number of Creatives:</label>
+    <input type="number" id="numCreatives" name="numCreatives" min="1"><br><br>
+
+    <label for="creativeType">Type of Creative:</label>
+    <select id="creativeType" name="creativeType">
+        <option value="post">Post</option>
+        <option value="carousel">Carousel</option>
+        <option value="reel">Reel</option>
+        <option value="mixed">Mixed</option>
+    </select><br><br>
+
+    <label for="numSlides">Number of Slides (Post/Carousel):</label>
+    <input type="number" id="numSlides" name="numSlides" min="1"><br><br>
+
+    <label for="reelDuration">Reel Duration (seconds):</label>
+    <input type="number" id="reelDuration" name="reelDuration" min="1"><br><br>
+
+    <button id="generateBtn">Generate</button>
+    <button id="excelBtn">Convert to Excel</button>
+
+    <table id="contentTable">
+        <thead>
+            <tr>
+                <th>Creative Type</th>
+                <th>Content</th>
+                <th>Hashtags</th>
+                <th>Caption</th>
+                <th>Copy</th>
+                <th>Design</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script src="script.js"></script>
+</body>
+</html>

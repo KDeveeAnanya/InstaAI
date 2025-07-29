@@ -1,0 +1,48 @@
+{
+  "name": "instagram-ai-generator",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@headlessui/react": "^1.7.15",
+    "@heroicons/react": "^2.1.0",
+    "axios": "^1.8.4",
+    "file-saver": "^2.0.5",
+    "lucide-react": "^0.487.0",
+    "papaparse": "^5.4.1",
+    "react": "^18.2.0",
+    "react-copy-to-clipboard": "^5.1.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.10.1",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^3.1.1",
+    "xlsx": "^0.18.5"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "browserslist": {
+    "production": [
+      "chrome >= 60",
+      "firefox >= 60",
+      "edge >= 79",
+      "safari >= 11",
+      "ios_saf >= 11",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.4.1"
+  },
+"proxy": "http://127.0.0.1:5000"
+
+}
