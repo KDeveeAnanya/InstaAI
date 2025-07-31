@@ -4,9 +4,9 @@ import pandas as pd
 import os
 import io
 import re
+import random
 from dotenv import load_dotenv
 from groq import Groq
-import random
 
 # ------------------ SETUP ------------------ #
 load_dotenv()
@@ -18,16 +18,14 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "your_groq_api_key_here")
 client = Groq(api_key=GROQ_API_KEY)
 
-
 # ------------------ HELPERS ------------------ #
 def call_groq(prompt: str, temperature: float = 0.7, max_tokens: int = 400) -> str:
-    """Send prompt to Groq and get generated text."""
+    """Send prompt to Groq and return generated text."""
     try:
         response = client.chat.completions.create(
             model="llama3-8b-8192",
             messages=[
-                {"role": "system",
-                 "content": "You are an expert Instagram content creator. Generate catchy, structured content."},
+                {"role": "system", "content": "You are an expert Instagram content creator. Generate catchy, structured content."},
                 {"role": "user", "content": prompt},
             ],
             temperature=temperature,
@@ -38,9 +36,8 @@ def call_groq(prompt: str, temperature: float = 0.7, max_tokens: int = 400) -> s
         print(f"❌ Groq API Error: {e}")
         return "Caption: Something went wrong.\nHashtags: #SocialMedia"
 
-
 def generate_hashtags(topic: str) -> str:
-    """Generate SEO-friendly hashtags."""
+    """Fallback hashtag generator using topic keywords."""
     words = topic.lower().split()
     fallback = [f"#{word}" for word in words] + [
         "#TrendingNow", "#ViralContent", "#MarketingTips",
@@ -48,9 +45,8 @@ def generate_hashtags(topic: str) -> str:
     ]
     return " ".join(fallback[:15])
 
-
 def parse_groq_output(content: str, topic: str) -> dict:
-    """Extract headline, hashtags, and caption from Groq response."""
+    """Parse Groq response for caption, hashtags, and body content."""
     caption_match = re.search(r"\*\*Caption:\*\*\s*(.*?)(?:\n|$)", content, re.DOTALL)
     hashtags_match = re.search(r"\*\*Hashtags:\*\*\s*(.*?)(?:\n|$)", content, re.DOTALL)
 
@@ -66,9 +62,8 @@ def parse_groq_output(content: str, topic: str) -> dict:
         "caption": caption_text
     }
 
-
 def generate_single_post(topic: str, post_type: str, num_slides: int = 1, num_seconds: int = 15) -> dict:
-    """Generate content for a single Instagram post using Groq."""
+    """Generate content for a single post type."""
     if post_type == "Carousel":
         prompt = (
             f"Create an Instagram Carousel Post about '{topic}' with {num_slides} slides.\n"
@@ -81,7 +76,7 @@ def generate_single_post(topic: str, post_type: str, num_slides: int = 1, num_se
             "Format like:\n0s–5s: Hook\n5s–10s: Main Point 1\n10s–15s: Main Point 2\n\n"
             "Finally add:\n**Caption:** ...\n**Hashtags:** ..."
         )
-    else:
+    else:  # Post
         prompt = (
             f"Create a SINGLE Instagram Post about '{topic}'.\n"
             "Include:\nHeadline: (6-8 words)\nBody: (catchy 2-3 lines)\n\n"
@@ -89,43 +84,40 @@ def generate_single_post(topic: str, post_type: str, num_slides: int = 1, num_se
         )
 
     content = call_groq(prompt)
-    parsed_data = parse_groq_output(content, topic)
+    parsed = parse_groq_output(content, topic)
 
     return {
         "postType": post_type,
-        "headlineCopy": parsed_data["headlineCopy"],
-        "hashtags": parsed_data["hashtags"],
-        "caption": parsed_data["caption"]
+        "headlineCopy": parsed["headlineCopy"],
+        "hashtags": parsed["hashtags"],
+        "caption": parsed["caption"]
     }
-
 
 # ------------------ ROUTES ------------------ #
 @app.route("/api/generate", methods=["POST"])
 def generate_batch():
-    data = request.json
+    """Main endpoint to generate multiple posts."""
+    data = request.get_json()
     topic = data.get("topic", "")
     selected_type = data.get("postType", "Post")
     num_posts = min(int(data.get("numPosts", 1)), 30)
     num_slides = int(data.get("numSlides", 1))
     num_seconds = int(data.get("numSeconds", 15))
 
-    print(f"[INFO] Generating {num_posts} '{selected_type}' posts on '{topic}'")
+    print(f"[INFO] Generating {num_posts} '{selected_type}' posts on topic: '{topic}'")
 
-    def get_post_type():
-        if selected_type == "Mixed":
-            return random.choice(["Post", "Carousel", "Reel"])
-        return selected_type
+    def choose_type():
+        return random.choice(["Post", "Carousel", "Reel"]) if selected_type == "Mixed" else selected_type
 
-    posts = [
-        generate_single_post(topic, get_post_type(), num_slides, num_seconds)
+    results = [
+        generate_single_post(topic, choose_type(), num_slides, num_seconds)
         for _ in range(num_posts)
     ]
-    return jsonify(posts)
-
+    return jsonify(results)
 
 @app.route("/api/export", methods=["POST"])
 def export_to_excel():
-    """Export generated posts to an Excel file."""
+    """Export generated posts to Excel."""
     posts = request.json
     output = io.BytesIO()
 
@@ -145,7 +137,6 @@ def export_to_excel():
 
     output.seek(0)
     return send_file(output, download_name="generated_posts.xlsx", as_attachment=True)
-
 
 # ------------------ MAIN ------------------ #
 if __name__ == "__main__":
