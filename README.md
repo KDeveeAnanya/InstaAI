@@ -26,7 +26,7 @@ InstaAI is an AI-based tool that automatically generates **Instagram post captio
 
 ---
 
-## ⚙️ **Installation & Setup**
+## **Installation & Setup**
 ### **1. Clone the Repository**
 ```bash
 git clone https://github.com/<your-username>/InstaAI.git
